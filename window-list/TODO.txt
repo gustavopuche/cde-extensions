@@ -1,0 +1,12 @@
+========================================
+ON SEGUIR
+========================================
+
+Revisar el arxiu:
+
+$HOME/tmp/dev/cde-2.2.4/programs/dtwm/WMFunction.c
+
+Revisar la funcio:
+
+F_Circle_Up()
+
