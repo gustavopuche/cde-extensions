@@ -1,0 +1,176 @@
+#! /usr/dt/bin/dtksh
+
+find ~/tmp/dtlog.txt -type f -size +40k -exec truncate -s 0 {} \;
+
+# #########################################################################
+#   (c) Copyright 1993, 1994 Hewlett-Packard Company	
+#   (c) Copyright 1993, 1994 International Business Machines Corp.
+#   (c) Copyright 1993, 1994 Sun Microsystems, Inc.
+#   (c) Copyright 1993, 1994 Unix System Labs, Inc., a subsidiary of
+#       Novell, Inc.
+# #########################################################################
+
+
+# 
+#  This sample shell script demonstrates how to interact with the workspace
+#  manager.  It demonstrates the following capabilities:
+# 
+# 	1) How to query which workspaces the widgets currently reside it.
+# 	2) How to set the current workspace.
+# 	3) How to be notified when the current workspace changes.
+# 
+
+
+integer wsCount
+
+#  Pushbutton Callback: This function asks the workspace manager to change
+#                       to the workspace indicated by $1; $1 is an X atom
+#                       which identifies the new workspace.  At some point
+#                       after our request to the workspace manager, the
+#                       workspace manager will activate our WsCB function,
+#                       letting us know that the change has actually taken
+#                       place.
+# SetWorkspace()
+# {
+#    echo
+#    if DtWsmSetCurrentWorkspace $TOPLEVEL $1; then
+#       echo "Changing to new workspace"
+#    else
+#       XmGetAtomName NAME $(XtDisplay "-" $TOPLEVEL) $1
+#       echo "Unable to Change to workspace " $NAME
+#    fi
+# }
+
+#  Workspace Changed Callback: This function is invoked whenever the workspace
+#                              manager changes workspaces.  It will simply
+#                              query the 'name' of the new workspace, and
+#                              echo it outl
+WsCB()
+{
+   DtWsmGetCurrentWorkspace $(XtDisplay "-" $TOPLEVEL)                        $(XRootWindowOfScreen "-" $(XtScreen "-" $TOPLEVEL))                        NEW_ATOM
+
+
+   XmGetAtomName NAME $(XtDisplay "-" $TOPLEVEL) $NEW_ATOM
+   echo "Change to workspace complete " $NAME  "("$NEW_ATOM")" >> $HOME/tmp/dtlog.txt
+   exit -1
+}
+
+# ###################### Create the Main UI ###############################
+
+XtInitialize TOPLEVEL dtWsTest DtWsTest "$0" "$@"
+XtSetValues $TOPLEVEL allowShellResize:True
+
+XtCreateManagedWidget DA da XmDrawingArea $TOPLEVEL
+XtSetValues $DA height:200 width:200
+
+XtRealizeWidget $TOPLEVEL
+XSync $(XtDisplay "-" $TOPLEVEL) False
+
+# XtCreateApplicationShell TOPLEVEL2 DtWsTesta TopLevelShell
+
+# XtCreateManagedWidget RC rc XmRowColumn $TOPLEVEL2          orientation:HORIZONTAL          packing:PACK_COLUMN 
+
+
+#  Get a list of all of the workspaces, and create a pushbutton for each one.
+#  When a pushbutton is activated, it will ask the workspace manager to
+#  change to the indicated workspace.
+oldIF=$IFS
+if DtWsmGetWorkspaceList $(XtDisplay "-" $TOPLEVEL)                           $(XRootWindowOfScreen "-" $(XtScreen "-" $TOPLEVEL))                           WS_LIST; 
+
+
+then
+  echo "WS_LIST=$WS_LIST" >> $HOME/tmp/dtlog.txt
+  IFS=,
+  wsCount=0
+  for item in $WS_LIST; 
+  do
+    echo "item=$item"
+    XmGetAtomName NAME $(XtDisplay "-" $TOPLEVEL) $item
+    label="Set Current Workspace to "$NAME
+
+    if [ "$item" -eq "$current" ]
+    then
+      echo "Current workspace: $wsCount" >> $HOME/tmp/dtlog.txt
+      wsIndex=$wsCount
+    fi
+    
+    # Store all workspace items in an array.
+    wspaces[$wsCount]=$item
+    
+##    XtCreateManagedWidget ITEM $item XmPushButton $RC 	     labelString:$label
+    
+##    XtAddCallback $ITEM activateCallback "SetWorkspace $item"
+    wsCount=$wsCount+1
+  done
+  IFS=$oldIFS
+else
+  echo "Unable to get workspace list" >> $HOME/tmp/dtlog.txt
+  exit
+fi
+
+echo "Last value for item=$item" >> $HOME/tmp/dtlog.txt
+
+## Sync XtDisplay
+XtRealizeWidget $TOPLEVEL
+XSync $(XtDisplay "-" $TOPLEVEL) False
+
+################################################################################
+## Get Current WS.
+current=0
+while [ "$current" -eq 0 ]
+do
+  if DtWsmGetWorkspacesOccupied $(XtDisplay "-" $TOPLEVEL)                               $(XtWindow "-" $TOPLEVEL)                                CURRENT_WS_LIST ;
+
+  then
+    echo "CURRENT_WS_LIST=$CURRENT_WS_LIST" >> $HOME/tmp/dtlog.txt
+    IFS=,
+    for item in $CURRENT_WS_LIST;
+    do
+      echo "Occupied WS item=$item" >> $HOME/tmp/dtlog.txt
+      current=$item
+    done
+  else
+    echo "Unable to get Ocupied workspace!!!" >> $HOME/tmp/dtlog.txt
+  fi
+done
+################################################################################
+## Get WS index.
+echo "Get index WS_LIST=$WS_LIST" >> $HOME/tmp/dtlog.txt
+IFS=,
+wsCount=0
+for item in $WS_LIST; 
+do
+  echo "item=$item" >> $HOME/tmp/dtlog.txt
+  
+  if [ "$item" -eq "$current" ]
+  then
+    echo "Current workspace: $wsCount" >> $HOME/tmp/dtlog.txt
+    wsIndex=$wsCount
+  fi
+  
+  wsCount=$wsCount+1
+done
+
+echo "Number of workspaces: $wsCount" >> $HOME/tmp/dtlog.txt
+
+halfws=`expr $wsCount / 2`
+
+echo "Half number of ws   : $halfws" >> $HOME/tmp/dtlog.txt
+
+if [ "$wsIndex" -lt "$halfws" ]
+then
+  newWS=`expr $wsIndex + $halfws`
+else
+  newWS=`expr $wsIndex - $halfws`
+fi
+
+echo "Change to WS item: ${wspaces[$newWS]}" >> $HOME/tmp/dtlog.txt
+
+#  Add a callback to be notified whenever the workspace changes.
+DtWsmAddCurrentWorkspaceCallback HANDLE1 $TOPLEVEL WsCB
+
+item=545
+DtWsmSetCurrentWorkspace $TOPLEVEL ${wspaces[$newWS]}
+
+
+XtMainLoop
