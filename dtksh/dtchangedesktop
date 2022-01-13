@@ -52,7 +52,7 @@ WsCB()
 
    XmGetAtomName NAME $(XtDisplay "-" $TOPLEVEL) $NEW_ATOM
    echo "Change to workspace complete " $NAME  "("$NEW_ATOM")" >> $HOME/tmp/dtlog.txt
-   exit -1
+   exit
 }
 
 # ###################### Create the Main UI ###############################

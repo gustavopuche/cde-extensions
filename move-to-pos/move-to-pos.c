@@ -271,7 +271,9 @@ Move SELECTED window to selected possition.\n", stdout);
   -c, --center             Center SELECTED window in 1st monitor\n\
   -C, --center-2nd-monitor Center SELECTED window in 2nd monitor\n\
   -e, --middle-left-1st    Occupy middle left of 1st monitor\n\
-  -d, --middle-right-1st   Occupy middle right of 1st monitor\n", stdout);
+  -d, --middle-right-1st   Occupy middle right of 1st monitor\n\
+  -f, --middle-up-1st      Occupy middle up of 1st monitor\n\
+  -g, --middle-down-1st    Occupy middle down of 1st monitor\n", stdout);
 
 	  exit(status);
 	}
@@ -414,7 +416,7 @@ int main(int argc,char *argv[])
 	y_dest = y;
 	border_width = 6;
 
-	while ((c = getopt_long (argc, argv, "plLrRcCedmM",
+	while ((c = getopt_long (argc, argv, "plLrRcCedfgmM",
 							 long_opts, NULL))
 		   != -1)
 	{
@@ -473,6 +475,22 @@ int main(int argc,char *argv[])
 			res_height = monitor_1st_height;
 
 			x_dest = monitor_1st_width - width;
+			
+			break;
+        case 'f':
+			printf("Window occupy middle up side in 1st monitor\n");
+			x_dest = 0;
+			y_dest = 0;
+			res_width = monitor_1st_width;
+			res_height = (monitor_1st_height /2) - 2 * border_width;
+            
+			break;
+        case 'g':            
+			printf("Window occupy middle down side in 1st monitor\n");
+			x_dest = 0;
+			y_dest = monitor_1st_height - height;
+			res_width = monitor_1st_width;
+			res_height = (monitor_1st_height /2) - 2 * border_width;
 			
 			break;
 		case 'M':
