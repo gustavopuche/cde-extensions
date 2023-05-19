@@ -1,6 +1,13 @@
 #! /usr/dt/bin/dtksh
 
-find ~/tmp/dtlog.txt -type f -size +40k -exec truncate -s 0 {} \;
+LOG=~/tmp/dtlog.txt
+if test -f "$LOG"; then
+    echo Exists $LOG
+    find $LOG -type f -size +40k -exec truncate -s 0 {} \;
+else
+    echo Create $LOG
+    touch $LOG
+fi
 
 # #########################################################################
 #   (c) Copyright 1993, 1994 Hewlett-Packard Company	
@@ -51,7 +58,7 @@ WsCB()
 
 
    XmGetAtomName NAME $(XtDisplay "-" $TOPLEVEL) $NEW_ATOM
-   echo "Change to workspace complete " $NAME  "("$NEW_ATOM")" >> $HOME/tmp/dtlog.txt
+   echo "Change to workspace complete " $NAME  "("$NEW_ATOM")" >> $LOG
    exit
 }
 
@@ -70,16 +77,17 @@ XSync $(XtDisplay "-" $TOPLEVEL) False
 
 # XtCreateManagedWidget RC rc XmRowColumn $TOPLEVEL2          orientation:HORIZONTAL          packing:PACK_COLUMN 
 
-
 #  Get a list of all of the workspaces, and create a pushbutton for each one.
 #  When a pushbutton is activated, it will ask the workspace manager to
 #  change to the indicated workspace.
 oldIF=$IFS
-if DtWsmGetWorkspaceList $(XtDisplay "-" $TOPLEVEL)                           $(XRootWindowOfScreen "-" $(XtScreen "-" $TOPLEVEL))                           WS_LIST; 
 
+echo top level=$TOPLEVEL
 
+if DtWsmGetWorkspaceList $(XtDisplay "-" $TOPLEVEL) $(XRootWindowOfScreen "-" $(XtScreen "-" $TOPLEVEL)) WS_LIST;
 then
-  echo "WS_LIST=$WS_LIST" >> $HOME/tmp/dtlog.txt
+  echo top level=$TOPLEVEL
+  echo "WS_LIST=$WS_LIST" >> $LOG
   IFS=,
   wsCount=0
   for item in $WS_LIST; 
@@ -90,7 +98,7 @@ then
 
     if [ "$item" -eq "$current" ]
     then
-      echo "Current workspace: $wsCount" >> $HOME/tmp/dtlog.txt
+      echo "Current workspace: $wsCount" >> $LOG
       wsIndex=$wsCount
     fi
     
@@ -104,11 +112,11 @@ then
   done
   IFS=$oldIFS
 else
-  echo "Unable to get workspace list" >> $HOME/tmp/dtlog.txt
+  echo "Unable to get workspace list" >> $LOG
   exit
 fi
 
-echo "Last value for item=$item" >> $HOME/tmp/dtlog.txt
+echo "Last value for item=$item" >> $LOG
 
 ## Sync XtDisplay
 XtRealizeWidget $TOPLEVEL
@@ -122,40 +130,40 @@ do
   if DtWsmGetWorkspacesOccupied $(XtDisplay "-" $TOPLEVEL)                               $(XtWindow "-" $TOPLEVEL)                                CURRENT_WS_LIST ;
 
   then
-    echo "CURRENT_WS_LIST=$CURRENT_WS_LIST" >> $HOME/tmp/dtlog.txt
+    echo "CURRENT_WS_LIST=$CURRENT_WS_LIST" >> $LOG
     IFS=,
     for item in $CURRENT_WS_LIST;
     do
-      echo "Occupied WS item=$item" >> $HOME/tmp/dtlog.txt
+      echo "Occupied WS item=$item" >> $LOG
       current=$item
     done
   else
-    echo "Unable to get Ocupied workspace!!!" >> $HOME/tmp/dtlog.txt
+    echo "Unable to get Ocupied workspace!!!" >> $LOG
   fi
 done
 ################################################################################
 ## Get WS index.
-echo "Get index WS_LIST=$WS_LIST" >> $HOME/tmp/dtlog.txt
+echo "Get index WS_LIST=$WS_LIST" >> $LOG
 IFS=,
 wsCount=0
 for item in $WS_LIST; 
 do
-  echo "item=$item" >> $HOME/tmp/dtlog.txt
+  echo "item=$item" >> $LOG
   
   if [ "$item" -eq "$current" ]
   then
-    echo "Current workspace: $wsCount" >> $HOME/tmp/dtlog.txt
+    echo "Current workspace: $wsCount" >> $LOG
     wsIndex=$wsCount
   fi
   
   wsCount=$wsCount+1
 done
 
-echo "Number of workspaces: $wsCount" >> $HOME/tmp/dtlog.txt
+echo "Number of workspaces: $wsCount" >> $LOG
 
 halfws=`expr $wsCount / 2`
 
-echo "Half number of ws   : $halfws" >> $HOME/tmp/dtlog.txt
+echo "Half number of ws   : $halfws" >> $LOG
 
 if [ "$wsIndex" -lt "$halfws" ]
 then
@@ -164,7 +172,7 @@ else
   newWS=`expr $wsIndex - $halfws`
 fi
 
-echo "Change to WS item: ${wspaces[$newWS]}" >> $HOME/tmp/dtlog.txt
+echo "Change to WS item: ${wspaces[$newWS]}" >> $LOG
 
 #  Add a callback to be notified whenever the workspace changes.
 DtWsmAddCurrentWorkspaceCallback HANDLE1 $TOPLEVEL WsCB
